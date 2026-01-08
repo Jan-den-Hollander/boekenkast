@@ -1,0 +1,290 @@
+﻿La mia libreria 
+
+Versie 5.5 & backup functie 
+
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Mijn Boekenkast - La mia libreria</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 20px; line-height: 1.5; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 1100px; margin: auto; }
+        .sectie { background: #fafafa; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; }
+        h3 { margin-top: 0; color: #0056b3; }
+        label { display: block; font-weight: bold; margin-top: 5px; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; margin-right: 5px; margin-bottom: 5px; }
+        .btn-save { background-color: #28a745; }
+        .btn-backup { background-color: #17a2b8; }
+        .btn-restore { background-color: #6f42c1; }
+        .btn-delete { background-color: #dc3545; padding: 5px 8px; font-size: 11px; }
+        .btn-edit { background-color: #ffc107; color: #000; padding: 5px 8px; font-size: 11px; }
+        #zoekveld { background-color: #fff9c4; border: 2px solid #fbc02d; font-size: 16px; margin-bottom: 10px; }
+        .filter-container { margin-top: 10px; padding: 5px; background: #eee; border-radius: 4px; }
+        .filter-option { display: inline-block; margin-right: 15px; cursor: pointer; font-weight: normal; }
+        .filter-option input { width: auto; margin-right: 5px; vertical-align: middle; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
+        th { background-color: #eee; }
+        .status-uitgeleend { background-color: #ffebee; color: #c62828; font-weight: bold; }
+        .edit-mode { border: 2px solid #ffc107 !important; background-color: #fffde7 !important; }
+        #backup-vak { display:none; margin-top:10px; background: #e9ecef; padding: 15px; border: 2px dashed #666; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📚 Mijn Boekenkast - La mia libreria</h1>
+
+    <div class="sectie">
+        <h3>🔍 Zoeken & Filteren - Cerca e Filtra</h3>
+        <input type="text" id="zoekveld" onkeyup="toonBoeken()" placeholder="Zoek op titel, auteur of ISBN... Cerca per titolo, autore o ISBN...">
+        <div class="filter-container">
+            <label class="filter-option"><input type="radio" name="statusFilter" value="Alle" checked onclick="toonBoeken()"> Alles - Tutto</label>
+            <label class="filter-option"><input type="radio" name="statusFilter" value="Aanwezig" onclick="toonBoeken()"> ✅ Aanwezig - Presente</label>
+            <label class="filter-option"><input type="radio" name="statusFilter" value="Uitgeleend" onclick="toonBoeken()"> 📦 Uitgeleend - Prestato</label>
+        </div>
+    </div>
+
+    <div class="sectie" id="formulier-sectie">
+        <h3 id="form-titel">➕ Nieuw boek toevoegen - Aggiungi libro</h3>
+        <input type="hidden" id="bewerk-id"> 
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <div style="flex: 1; min-width: 200px;">
+                <label>Titel - Titolo</label><input type="text" id="titel">
+                <label>Schrijver - Scrittore</label><input type="text" id="schrijver">
+                <label>Type / Genre / Extra info</label><input type="text" id="type">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <label>ISBN</label><input type="text" id="isbn">
+                <label>Kast / Plank - Armadio / Scaffale</label><input type="text" id="plank">
+                <label>Status - Stato</label>
+                <select id="status" onchange="toggleUitleenVelden()">
+                    <option value="Aanwezig">Aanwezig - Presente</option>
+                    <option value="Uitgeleend">Uitgeleend - Prestato</option>
+                </select>
+            </div>
+        </div>
+        <div id="uitleen-details" style="display:none; margin-top:10px; padding:10px; border:1px dashed #007bff;">
+            <label>Aan wie? - A chi?</label><input type="text" id="aan_wie">
+            <label>Datum - Data</label><input type="date" id="datum_uitleen">
+        </div>
+        <label>Omschrijving / Historie - Descrizione / Storia</label>
+        <textarea id="omschrijving" rows="2"></textarea>
+        <button class="btn btn-save" id="save-btn" onclick="voegBoekToe()">Boek Opslaan - Salva</button>
+        <button class="btn" style="background-color: #6c757d; display:none;" id="cancel-btn" onclick="resetFormulier()">Annuleren - Annulla</button>
+    </div>
+
+    <div class="sectie">
+        <h3>💾 Backup & Herstel - Backup e Ripristino</h3>
+        <button class="btn btn-backup" onclick="maakBackup()">Maak Backup - Crea Backup</button>
+        <button class="btn btn-restore" onclick="toonHerstelVak()">Herstel Backup - Ripristina</button>
+        
+        <div id="backup-vak">
+            <p><strong>Backup tekst:</strong> <small>(Kopieer dit en bewaar in een tekstbestand - Copia e salva in un file di testo)</small></p>
+            <textarea id="backup-tekstveld" rows="8" placeholder="Gegevens verschijnen hier..."></textarea>
+            <div style="margin-top:10px;">
+                <button class="btn btn-restore" onclick="voerHerstelUit()">Nu Herstellen - Ripristina ora</button>
+                <button class="btn" style="background-color: #6c757d;" onclick="document.getElementById('backup-vak').style.display='none'">Sluiten - Chiudi</button>
+            </div>
+        </div>
+    </div>
+
+    <table id="boekenTabel">
+        <thead>
+            <tr>
+                <th>Titel - Titolo</th>
+                <th>Schrijver - Scrittore</th>
+                <th>ISBN</th>
+                <th>Locatie - Posizione</th>
+                <th>Status - Stato</th>
+                <th>Uitleen - Prestito</th>
+                <th>Acties - Azioni</th>
+            </tr>
+        </thead>
+        <tbody id="tabelInhoud"></tbody>
+    </table>
+</div>
+
+<script>
+    function toggleUitleenVelden() {
+        var status = document.getElementById('status').value;
+        document.getElementById('uitleen-details').style.display = (status === 'Uitgeleend') ? 'block' : 'none';
+    }
+
+    function haalBoekenOp() {
+        var boeken = localStorage.getItem('mijnBoekenkast');
+        return boeken ? JSON.parse(boeken) : [];
+    }
+
+    function voegBoekToe() {
+        var boeken = haalBoekenOp();
+        var bewerkId = document.getElementById('bewerk-id').value;
+        var boekData = {
+            id: bewerkId ? parseInt(bewerkId) : new Date().getTime(),
+            titel: document.getElementById('titel').value,
+            schrijver: document.getElementById('schrijver').value,
+            type: document.getElementById('type').value,
+            isbn: document.getElementById('isbn').value,
+            plank: document.getElementById('plank').value,
+            omschrijving: document.getElementById('omschrijving').value,
+            status: document.getElementById('status').value,
+            aan_wie: document.getElementById('aan_wie').value,
+            datum: document.getElementById('datum_uitleen').value
+        };
+
+        if(!boekData.titel) { alert("Titel verplicht! - Titolo obbligatorio!"); return; }
+
+        if (bewerkId) {
+            for (var i = 0; i < boeken.length; i++) {
+                if (boeken[i].id == bewerkId) { boeken[i] = boekData; break; }
+            }
+        } else {
+            boeken.push(boekData);
+        }
+
+        localStorage.setItem('mijnBoekenkast', JSON.stringify(boeken));
+        resetFormulier();
+        toonBoeken();
+    }
+
+    function openBewerken(id) {
+        var boeken = haalBoekenOp();
+        var b = null;
+        for (var i = 0; i < boeken.length; i++) {
+            if (boeken[i].id === id) { b = boeken[i]; break; }
+        }
+        if (b) {
+            document.getElementById('bewerk-id').value = b.id;
+            document.getElementById('titel').value = b.titel;
+            document.getElementById('schrijver').value = b.schrijver;
+            document.getElementById('type').value = b.type;
+            document.getElementById('isbn').value = b.isbn;
+            document.getElementById('plank').value = b.plank;
+            document.getElementById('omschrijving').value = b.omschrijving;
+            document.getElementById('status').value = b.status;
+            document.getElementById('aan_wie').value = b.aan_wie || '';
+            document.getElementById('datum_uitleen').value = b.datum || '';
+            toggleUitleenVelden();
+            document.getElementById('form-titel').innerText = "🖊️ Aanpassen - Modifica";
+            document.getElementById('save-btn').innerText = "Wijzigingen Opslaan";
+            document.getElementById('cancel-btn').style.display = "inline-block";
+            document.getElementById('formulier-sectie').className = 'sectie edit-mode';
+            window.scrollTo(0,0);
+        }
+    }
+
+    function resetFormulier() {
+        document.getElementById('bewerk-id').value = '';
+        document.getElementById('titel').value = '';
+        document.getElementById('schrijver').value = '';
+        document.getElementById('type').value = '';
+        document.getElementById('isbn').value = '';
+        document.getElementById('plank').value = '';
+        document.getElementById('omschrijving').value = '';
+        document.getElementById('status').value = 'Aanwezig';
+        document.getElementById('aan_wie').value = '';
+        document.getElementById('datum_uitleen').value = '';
+        document.getElementById('form-titel').innerText = "➕ Nieuw boek toevoegen";
+        document.getElementById('save-btn').innerText = "Boek Opslaan";
+        document.getElementById('cancel-btn').style.display = "none";
+        document.getElementById('formulier-sectie').className = 'sectie';
+        toggleUitleenVelden();
+    }
+
+    function toonBoeken() {
+        var boeken = haalBoekenOp();
+        var zoekterm = document.getElementById('zoekveld').value.toLowerCase();
+        var filters = document.getElementsByName('statusFilter');
+        var statusFilter = 'Alle';
+        for (var f = 0; f < filters.length; f++) { if (filters[f].checked) statusFilter = filters[f].value; }
+
+        var tabel = document.getElementById('tabelInhoud');
+        tabel.innerHTML = '';
+
+        for (var i = 0; i < boeken.length; i++) {
+            var b = boeken[i];
+            var matchTekst = (b.titel.toLowerCase().indexOf(zoekterm) > -1 || b.schrijver.toLowerCase().indexOf(zoekterm) > -1);
+            var matchStatus = (statusFilter === 'Alle') || (b.status === statusFilter);
+
+            if (matchTekst && matchStatus) {
+                var rij = tabel.insertRow(-1);
+                if(b.status === 'Uitgeleend') rij.className = 'status-uitgeleend';
+                rij.innerHTML = "<td><strong>" + b.titel + "</strong><br><small>" + b.type + "</small></td><td>" + b.schrijver + "</td><td>" + b.isbn + "</td><td>" + b.plank + "</td><td>" + b.status + "</td><td>" + (b.aan_wie || '-') + "</td>" +
+                                "<td><button class='btn btn-edit' onclick='openBewerken(" + b.id + ")'>🖊️</button>" +
+                                "<button class='btn btn-delete' onclick='verwijderBoek(" + b.id + ")'>X</button></td>";
+            }
+        }
+    }
+
+    function verwijderBoek(id) {
+        if(confirm("Verwijderen? - Eliminare?")) {
+            var boeken = haalBoekenOp();
+            var nieuweLijst = [];
+            for (var i = 0; i < boeken.length; i++) { if (boeken[i].id !== id) nieuweLijst.push(boeken[i]); }
+            localStorage.setItem('mijnBoekenkast', JSON.stringify(nieuweLijst));
+            toonBoeken();
+        }
+    }
+
+    // --- BACKUP & HERSTEL (ES5 COMPATIBLE) ---
+    function maakBackup() {
+        var boeken = haalBoekenOp();
+        if (boeken.length === 0) { alert("Geen gegevens."); return; }
+        
+        var backupTekst = JSON.stringify(boeken);
+        document.getElementById('backup-vak').style.display = 'block';
+        document.getElementById('backup-tekstveld').value = backupTekst;
+        
+        // CSV genereren voor Excel
+        var csv = "Titel;Schrijver;ISBN;Locatie;Status;Uitleen_Aan;Datum\n";
+        for (var i = 0; i < boeken.length; i++) {
+            var b = boeken[i];
+            csv += b.titel + ";" + b.schrijver + ";" + b.isbn + ";" + b.plank + ";" + b.status + ";" + b.aan_wie + ";" + b.datum + "\n";
+        }
+        
+        // Download poging (alleen voor modernere browsers)
+        try {
+            if (window.Blob && window.URL && window.URL.createObjectURL) {
+                var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                var link = document.createElement("a");
+                var url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "boekenkast_backup.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        } catch(e) {}
+        
+        alert("Backup tekst gegenereerd onderaan de pagina!");
+    }
+
+    function toonHerstelVak() {
+        document.getElementById('backup-vak').style.display = 'block';
+        document.getElementById('backup-tekstveld').value = '';
+        document.getElementById('backup-tekstveld').placeholder = "Plak hier je backup-tekst... Incolla qui il testo del backup...";
+    }
+
+    function voerHerstelUit() {
+        var tekst = document.getElementById('backup-tekstveld').value;
+        if (!tekst) { alert("Veld is leeg! - Campo vuoto!"); return; }
+        
+        try {
+            var data = JSON.parse(tekst);
+            if (confirm("Huidige lijst overschrijven? - Sovrascrivere l'elenco?")) {
+                localStorage.setItem('mijnBoekenkast', JSON.stringify(data));
+                location.reload();
+            }
+        } catch (err) {
+            alert("Fout: Ongeldige backup tekst. - Errore: testo backup non valido.");
+        }
+    }
+
+    window.onload = toonBoeken;
+</script>
+</body>
+</html>
